@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import shgo.innowise.trainee.recordssystem.config.ConnectionProvider;
 import shgo.innowise.trainee.recordssystem.entity.Employee;
 import shgo.innowise.trainee.recordssystem.entity.Role;
-import shgo.innowise.trainee.recordssystem.exception.SaveException;
+import shgo.innowise.trainee.recordssystem.exception.SystemInternalException;
 import javax.servlet.http.HttpServletResponse;
 
 /**
@@ -19,8 +19,8 @@ public class EmployeeDAO {
     private static final String SELECT_BY_ID_QUERY = "SELECT * FROM employee WHERE emp_id = ?";
     private static final String SELECT_ROLES_BY_ID_QUERY = "SELECT * FROM employee_role "
             + "WHERE emp_id = ?";
-    private static final String SELECT_BY_EMAIL_AND_PASSWORD_QUERY = "SELECT * FROM "
-            + "employee WHERE email = ? AND password = ?";
+    private static final String SELECT_BY_EMAIL_QUERY = "SELECT * FROM "
+            + "employee WHERE email = ?";
     private static final String INSERT_QUERY = "INSERT INTO employee(first_name, last_name, "
             + "middle_name, email, password, creation_date) VALUES(?,?,?,?,?,?)";
     private static final String INSERT_ROLES_QUERY = "INSERT INTO employee_role(emp_id, role_id) "
@@ -91,15 +91,13 @@ public class EmployeeDAO {
      * Gives employee by email and password.
      *
      * @param email    employee's email
-     * @param password employee's password
      * @return employee
      */
-    public Optional<Employee> get(final String email, final String password) {
+    public Optional<Employee> get(final String email) {
         Optional<Employee> employeeOptional = Optional.empty();
         try (Connection connection = ConnectionProvider.getInstance().getConnection();
-             PreparedStatement statement = connection.prepareStatement(SELECT_BY_EMAIL_AND_PASSWORD_QUERY)) {
+             PreparedStatement statement = connection.prepareStatement(SELECT_BY_EMAIL_QUERY)) {
             statement.setString(1, email);
-            statement.setString(2, password);
 
             // select employee's data
             ResultSet employeeResultSet = statement.executeQuery();
@@ -172,7 +170,7 @@ public class EmployeeDAO {
             }
         } catch (SQLException e) {
             log.error(e.getMessage());
-            throw new SaveException("Employee cannot be created with email: "
+            throw new SystemInternalException("Employee cannot be created with email: "
                     + employee.getEmail(), HttpServletResponse.SC_BAD_REQUEST);
         }
 
@@ -204,7 +202,7 @@ public class EmployeeDAO {
             insertRoles(employee, connection);
         } catch (SQLException e) {
             log.error(e.getMessage());
-            throw new SaveException("Employee cannot be updated with id: "
+            throw new SystemInternalException("Employee cannot be updated with id: "
                     + employee.getId());
         }
 

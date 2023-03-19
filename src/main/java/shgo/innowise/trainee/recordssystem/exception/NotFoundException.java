@@ -3,7 +3,7 @@ package shgo.innowise.trainee.recordssystem.exception;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- * Employee not found exception.
+ * Not found exception.
  */
 public class NotFoundException extends DefaultException {
     public NotFoundException(String message) {

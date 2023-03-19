@@ -4,9 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.mapstruct.factory.Mappers;
 import shgo.innowise.trainee.recordssystem.dto.EmployeeDTO;
+import shgo.innowise.trainee.recordssystem.entity.Role;
 import shgo.innowise.trainee.recordssystem.mapper.EmployeeMapper;
 import shgo.innowise.trainee.recordssystem.response.MessageResponse;
+import shgo.innowise.trainee.recordssystem.security.PermissionManager;
 import shgo.innowise.trainee.recordssystem.service.EmployeeService;
+import shgo.innowise.trainee.recordssystem.servlet.RoutingHelper;
 import shgo.innowise.trainee.recordssystem.util.ControllerUtil;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -36,6 +39,25 @@ public class EmployeeController {
         employeeMapper = Mappers.getMapper(EmployeeMapper.class);
         employeeService = EmployeeService.getInstance();
         objectMapper = new ObjectMapper();
+
+        // add roles permissions to paths
+        PermissionManager permissionManager = PermissionManager.getInstance();
+        permissionManager.addPathToRole(Role.USER, GET_ALL_EMPLOYEES_PATH);
+        permissionManager.addPathToRole(Role.USER, GET_EMPLOYEE_PATH);
+
+        permissionManager.addPathToRole(Role.ADMIN, GET_ALL_EMPLOYEES_PATH);
+        permissionManager.addPathToRole(Role.ADMIN, GET_EMPLOYEE_PATH);
+        permissionManager.addPathToRole(Role.ADMIN, CREATE_EMPLOYEE_PATH);
+        permissionManager.addPathToRole(Role.ADMIN, UPDATE_EMPLOYEE_PATH);
+        permissionManager.addPathToRole(Role.ADMIN, DELETE_EMPLOYEE_PATH);
+
+        // add handlers to paths
+        RoutingHelper helper = RoutingHelper.getInstance();
+        helper.addGetPath(GET_EMPLOYEE_PATH, this::getEmployee);
+        helper.addGetPath(GET_ALL_EMPLOYEES_PATH, this::getAllEmployees);
+        helper.addPostPath(CREATE_EMPLOYEE_PATH, this::createEmployee);
+        helper.addPutPath(UPDATE_EMPLOYEE_PATH, this::updateEmployee);
+        helper.addDeletePath(DELETE_EMPLOYEE_PATH, this::deleteEmployee);
     }
 
     /**
