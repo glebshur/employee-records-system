@@ -1,13 +1,13 @@
 package shgo.innowise.trainee.recordssystem.dao;
 
 import java.sql.*;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 import shgo.innowise.trainee.recordssystem.config.ConnectionProvider;
 import shgo.innowise.trainee.recordssystem.entity.Employee;
 import shgo.innowise.trainee.recordssystem.entity.Role;
+import shgo.innowise.trainee.recordssystem.exception.SaveException;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * DAO for Employee entity.
@@ -19,6 +19,8 @@ public class EmployeeDAO {
     private static final String SELECT_BY_ID_QUERY = "SELECT * FROM employee WHERE emp_id = ?";
     private static final String SELECT_ROLES_BY_ID_QUERY = "SELECT * FROM employee_role "
             + "WHERE emp_id = ?";
+    private static final String SELECT_BY_EMAIL_AND_PASSWORD_QUERY = "SELECT * FROM "
+            + "employee WHERE email = ? AND password = ?";
     private static final String INSERT_QUERY = "INSERT INTO employee(first_name, last_name, "
             + "middle_name, email, password, creation_date) VALUES(?,?,?,?,?,?)";
     private static final String INSERT_ROLES_QUERY = "INSERT INTO employee_role(emp_id, role_id) "
@@ -60,7 +62,7 @@ public class EmployeeDAO {
      * @param id employee id
      * @return employee
      */
-    public Optional<Employee> get(long id) {
+    public Optional<Employee> get(final long id) {
         Optional<Employee> employeeOptional = Optional.empty();
         try (Connection connection = ConnectionProvider.getInstance().getConnection();
              PreparedStatement statement = connection.prepareStatement(SELECT_BY_ID_QUERY)) {
@@ -80,7 +82,39 @@ public class EmployeeDAO {
             }
 
         } catch (SQLException e) {
-            log.error(e.getSQLState());
+            log.error(e.getMessage());
+        }
+        return employeeOptional;
+    }
+
+    /**
+     * Gives employee by email and password.
+     *
+     * @param email    employee's email
+     * @param password employee's password
+     * @return employee
+     */
+    public Optional<Employee> get(final String email, final String password) {
+        Optional<Employee> employeeOptional = Optional.empty();
+        try (Connection connection = ConnectionProvider.getInstance().getConnection();
+             PreparedStatement statement = connection.prepareStatement(SELECT_BY_EMAIL_AND_PASSWORD_QUERY)) {
+            statement.setString(1, email);
+            statement.setString(2, password);
+
+            // select employee's data
+            ResultSet employeeResultSet = statement.executeQuery();
+            if (employeeResultSet.next()) {
+                Employee employee = fillInEmployee(employeeResultSet);
+                employeeOptional = Optional.of(employee);
+            }
+
+            // select employee's roles
+            if (employeeOptional.isPresent()) {
+                Employee employee = employeeOptional.get();
+                employee.setRoles(getRoles(employee.getId(), connection));
+            }
+
+        } catch (SQLException e) {
             log.error(e.getMessage());
         }
         return employeeOptional;
@@ -107,7 +141,6 @@ public class EmployeeDAO {
 
 
         } catch (SQLException e) {
-            log.error(e.getSQLState());
             log.error(e.getMessage());
         }
         return employees;
@@ -119,7 +152,7 @@ public class EmployeeDAO {
      * @param employee employee to create
      * @return created employee
      */
-    public Employee create(Employee employee) {
+    public Employee create(final Employee employee) {
         try (Connection connection = ConnectionProvider.getInstance().getConnection();
              PreparedStatement statement = connection.prepareStatement(INSERT_QUERY,
                      Statement.RETURN_GENERATED_KEYS)) {
@@ -129,17 +162,18 @@ public class EmployeeDAO {
             statement.setString(3, employee.getMiddleName());
             statement.setString(4, employee.getEmail());
             statement.setString(5, employee.getPassword());
-            statement.setString(6, employee.getCreationDate()
-                    .format(DateTimeFormatter.BASIC_ISO_DATE));
+            statement.setTimestamp(6, Timestamp.valueOf(employee.getCreationDate()));
+            statement.executeUpdate();
 
-            ResultSet key = statement.executeQuery();
+            ResultSet key = statement.getGeneratedKeys();
             if (key.next()) {
                 employee.setId(key.getLong(ID));
                 insertRoles(employee, connection);
             }
         } catch (SQLException e) {
-            log.error(e.getSQLState());
             log.error(e.getMessage());
+            throw new SaveException("Employee cannot be created with email: "
+                    + employee.getEmail(), HttpServletResponse.SC_BAD_REQUEST);
         }
 
         return employee;
@@ -151,7 +185,7 @@ public class EmployeeDAO {
      * @param employee employee to update
      * @return updated employee
      */
-    public Employee update(Employee employee) {
+    public Employee update(final Employee employee) {
         try (Connection connection = ConnectionProvider.getInstance().getConnection();
              PreparedStatement statement = connection.prepareStatement(UPDATE_QUERY)) {
 
@@ -159,16 +193,19 @@ public class EmployeeDAO {
             statement.setString(2, employee.getLastName());
             statement.setString(3, employee.getMiddleName());
             statement.setLong(4, employee.getId());
+            statement.executeUpdate();
 
             // delete old roles
             PreparedStatement deleteRolesStatement = connection.prepareStatement(DELETE_ROLES_QUERY);
             deleteRolesStatement.setLong(1, employee.getId());
+            deleteRolesStatement.executeUpdate();
             deleteRolesStatement.close();
 
             insertRoles(employee, connection);
         } catch (SQLException e) {
-            log.error(e.getSQLState());
             log.error(e.getMessage());
+            throw new SaveException("Employee cannot be updated with id: "
+                    + employee.getId());
         }
 
         return employee;
@@ -179,13 +216,12 @@ public class EmployeeDAO {
      *
      * @param employee employee to delete
      */
-    public void delete(Employee employee) {
+    public void delete(final Employee employee) {
         try (Connection connection = ConnectionProvider.getInstance().getConnection();
              PreparedStatement statement = connection.prepareStatement(DELETE_QUERY)) {
             statement.setLong(1, employee.getId());
             statement.execute();
         } catch (SQLException e) {
-            log.error(e.getSQLState());
             log.error(e.getMessage());
         }
     }
@@ -197,7 +233,7 @@ public class EmployeeDAO {
      * @param connection current connection
      * @return set of roles
      */
-    private Set<Role> getRoles(long employeeId, Connection connection) {
+    private Set<Role> getRoles(final long employeeId, final Connection connection) {
         Set<Role> roles = new HashSet<>();
 
         try (PreparedStatement roleSelect = connection.prepareStatement(SELECT_ROLES_BY_ID_QUERY)) {
@@ -208,7 +244,6 @@ public class EmployeeDAO {
                 roles.add(Role.values()[roleResultSet.getInt(ROLE_ID)]);
             }
         } catch (SQLException e) {
-            log.error(e.getSQLState());
             log.error(e.getMessage());
         }
         return roles;
@@ -221,7 +256,7 @@ public class EmployeeDAO {
      * @return employee
      * @throws SQLException sql exception
      */
-    private Employee fillInEmployee(ResultSet employeeResultSet) throws SQLException {
+    private Employee fillInEmployee(final ResultSet employeeResultSet) throws SQLException {
         Employee employee = new Employee();
         employee.setId(employeeResultSet.getLong(ID));
         employee.setFirstName(employeeResultSet.getString(FIRST_NAME));
@@ -229,8 +264,7 @@ public class EmployeeDAO {
         employee.setMiddleName(employeeResultSet.getString(MIDDLE_NAME));
         employee.setEmail(employeeResultSet.getString(EMAIL));
         employee.setPassword(employeeResultSet.getString(PASSWORD));
-        employee.setCreationDate(LocalDateTime.parse(employeeResultSet.getString(CREATION_DATE),
-                DateTimeFormatter.BASIC_ISO_DATE));
+        employee.setCreationDate(employeeResultSet.getTimestamp(CREATION_DATE).toLocalDateTime());
         return employee;
     }
 
@@ -241,7 +275,8 @@ public class EmployeeDAO {
      * @param connection current connection
      * @throws SQLException sql exception
      */
-    private void insertRoles(Employee employee, Connection connection) throws SQLException {
+    private void insertRoles(final Employee employee, final Connection connection)
+            throws SQLException {
         for (Role role : employee.getRoles()) {
             PreparedStatement preparedStatement = connection.prepareStatement(INSERT_ROLES_QUERY);
             preparedStatement.setLong(1, employee.getId());
