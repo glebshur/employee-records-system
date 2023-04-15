@@ -7,10 +7,10 @@ import shgo.innowise.trainee.recordssystem.dto.EmployeeDTO;
 import shgo.innowise.trainee.recordssystem.entity.Role;
 import shgo.innowise.trainee.recordssystem.mapper.EmployeeMapper;
 import shgo.innowise.trainee.recordssystem.response.MessageResponse;
+import shgo.innowise.trainee.recordssystem.response.ResponseEntity;
 import shgo.innowise.trainee.recordssystem.security.PermissionManager;
 import shgo.innowise.trainee.recordssystem.service.EmployeeService;
 import shgo.innowise.trainee.recordssystem.servlet.RoutingHelper;
-import shgo.innowise.trainee.recordssystem.util.ControllerUtil;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -33,7 +33,7 @@ public class EmployeeController {
     private EmployeeMapper employeeMapper;
     private EmployeeService employeeService;
     private ObjectMapper objectMapper;
-    private static EmployeeController instance;
+    private static volatile EmployeeController instance;
 
     private EmployeeController() {
         employeeMapper = Mappers.getMapper(EmployeeMapper.class);
@@ -66,19 +66,26 @@ public class EmployeeController {
      * @return instance of EmployeeController
      */
     public static EmployeeController getInstance() {
-        if (instance == null) {
-            instance = new EmployeeController();
+        EmployeeController localInstance = instance;
+        if (localInstance == null) {
+            synchronized (EmployeeController.class) {
+                localInstance = instance;
+                if (localInstance == null) {
+                    instance = new EmployeeController();
+                    localInstance = instance;
+                }
+            }
         }
-        return instance;
+        return localInstance;
     }
 
     /**
      * Gives employee by id.
      *
      * @param request  http request
-     * @param response http response
+     * @return employee dto response entity
      */
-    public void getEmployee(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<EmployeeDTO> getEmployee(HttpServletRequest request) {
 
         final long id = Long.parseLong(request.getPathInfo()
                 .substring(GET_EMPLOYEE_PATH.length()));
@@ -86,33 +93,31 @@ public class EmployeeController {
         var objectToSend = employeeMapper.employeeToDTO(
                 employeeService.getEmployee(id));
 
-        ControllerUtil.fillJsonResponse(response, HttpServletResponse.SC_OK,
-                objectMapper, objectToSend);
+        return new ResponseEntity<>(objectToSend, HttpServletResponse.SC_OK);
     }
 
     /**
      * Gives all employees.
      *
      * @param request  http request
-     * @param response http response
+     * @return list of employees dto as response entity
      */
-    public void getAllEmployees(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<List<EmployeeDTO>> getAllEmployees(HttpServletRequest request) {
 
         List<EmployeeDTO> employees = employeeService.getAllEmployees().stream()
                 .map(employee -> employeeMapper.employeeToDTO(employee))
                 .collect(Collectors.toList());
 
-        ControllerUtil.fillJsonResponse(response, HttpServletResponse.SC_OK,
-                objectMapper, employees);
+        return new ResponseEntity<>(employees, HttpServletResponse.SC_OK);
     }
 
     /**
      * Creates employee.
      *
      * @param request  http request
-     * @param response http response
+     * @return employee dto response entity
      */
-    public void createEmployee(HttpServletRequest request, HttpServletResponse response)
+    public ResponseEntity<EmployeeDTO> createEmployee(HttpServletRequest request)
             throws IOException {
 
         EmployeeDTO employeeDTO = objectMapper.readValue(request.getInputStream(),
@@ -120,34 +125,32 @@ public class EmployeeController {
         var objectToSend = employeeMapper.employeeToDTO(
                 employeeService.createEmployee(employeeDTO));
 
-        ControllerUtil.fillJsonResponse(response, HttpServletResponse.SC_CREATED,
-                objectMapper, objectToSend);
+        return new ResponseEntity<>(objectToSend, HttpServletResponse.SC_CREATED);
     }
 
     /**
      * Deletes employee.
      *
      * @param request  http request
-     * @param response http response
+     * @return message response as response entity
      */
-    public void deleteEmployee(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<MessageResponse> deleteEmployee(HttpServletRequest request) {
 
         final long id = Long.parseLong(request.getPathInfo()
                 .substring(DELETE_EMPLOYEE_PATH.length()));
         employeeService.deleteEmployee(id);
         var objectToSend = new MessageResponse("Employee successfully deleted");
 
-        ControllerUtil.fillJsonResponse(response, HttpServletResponse.SC_OK,
-                objectMapper, objectToSend);
+        return new ResponseEntity<>(objectToSend, HttpServletResponse.SC_OK);
     }
 
     /**
      * Updates employee.
      *
      * @param request  http request
-     * @param response http response
+     * @return employee dto response entity
      */
-    public void updateEmployee(HttpServletRequest request, HttpServletResponse response)
+    public ResponseEntity<EmployeeDTO> updateEmployee(HttpServletRequest request)
             throws IOException {
 
         final long id = Long.parseLong(request.getPathInfo()
@@ -158,7 +161,6 @@ public class EmployeeController {
         var objectToSend = employeeMapper.employeeToDTO(
                 employeeService.updateEmployee(id, employeeDTO));
 
-        ControllerUtil.fillJsonResponse(response, HttpServletResponse.SC_OK,
-                objectMapper, objectToSend);
+        return new ResponseEntity<>(objectToSend, HttpServletResponse.SC_OK);
     }
 }

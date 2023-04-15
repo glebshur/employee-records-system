@@ -1,6 +1,6 @@
 package shgo.innowise.trainee.recordssystem.security;
 
-import lombok.Data;
+import lombok.*;
 import shgo.innowise.trainee.recordssystem.entity.Role;
 
 import java.util.Set;
@@ -8,7 +8,9 @@ import java.util.Set;
 /**
  * Stores roles and username of user.
  */
-@Data
+@NoArgsConstructor
+@Setter
+@Getter
 public class Principal {
     private String username;
     private Set<Role> roles;

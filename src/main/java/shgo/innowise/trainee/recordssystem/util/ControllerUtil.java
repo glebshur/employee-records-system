@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import shgo.innowise.trainee.recordssystem.response.ResponseEntity;
 
 /**
  * Contains information and methods for generating an http response.
@@ -18,19 +19,17 @@ public class ControllerUtil {
      * Fills response with json data.
      *
      * @param response response to send
-     * @param status response status
+     * @param responseEntity response entity to send
      * @param mapper json mapper
-     * @param objectToSend object to send
      */
     public static void fillJsonResponse(HttpServletResponse response,
-                                  int status,
-                                  ObjectMapper mapper,
-                                  Object objectToSend) {
-        response.setStatus(status);
+                                        ResponseEntity<?> responseEntity,
+                                        ObjectMapper mapper) {
+        response.setStatus(responseEntity.getStatus());
         response.setContentType(CONTENT_TYPE);
         response.setCharacterEncoding(CHARACTER_ENCODING);
         try {
-            String json = mapper.writeValueAsString(objectToSend);
+            String json = mapper.writeValueAsString(responseEntity.getBody());
             PrintWriter out = response.getWriter();
             out.println(json);
             out.flush();

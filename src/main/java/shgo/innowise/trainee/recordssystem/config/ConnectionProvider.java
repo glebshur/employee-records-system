@@ -16,7 +16,7 @@ public class ConnectionProvider {
     private static final String DB_USER = "postgres";
     private static final String DB_PASSWORD = "postgres11";
 
-    private static ConnectionProvider connectionProvider;
+    private static volatile ConnectionProvider connectionProvider;
 
     private ConnectionProvider() {
         try {
@@ -32,10 +32,17 @@ public class ConnectionProvider {
      * @return instance of ConnectionProvider
      */
     public static ConnectionProvider getInstance() {
-        if (connectionProvider == null) {
-            connectionProvider = new ConnectionProvider();
+        ConnectionProvider localInstance = connectionProvider;
+        if (localInstance == null) {
+            synchronized (ConnectionProvider.class) {
+                localInstance = connectionProvider;
+                if (localInstance == null) {
+                    connectionProvider = new ConnectionProvider();
+                    localInstance = connectionProvider;
+                }
+            }
         }
-        return connectionProvider;
+        return localInstance;
     }
 
     /**
