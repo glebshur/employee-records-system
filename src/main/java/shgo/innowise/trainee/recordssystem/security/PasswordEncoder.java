@@ -9,7 +9,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 @Getter
 public class PasswordEncoder {
     private BCryptPasswordEncoder encoder;
-    private static PasswordEncoder instance;
+    private static volatile PasswordEncoder instance;
 
     private PasswordEncoder() {
         encoder = new BCryptPasswordEncoder();
@@ -21,9 +21,16 @@ public class PasswordEncoder {
      * @return instance of PasswordEncoder
      */
     public static PasswordEncoder getInstance() {
-        if (instance == null) {
-            instance = new PasswordEncoder();
+        PasswordEncoder localInstance = instance;
+        if (localInstance == null) {
+            synchronized (PasswordEncoder.class) {
+                localInstance = instance;
+                if (localInstance == null) {
+                    instance = new PasswordEncoder();
+                    localInstance = instance;
+                }
+            }
         }
-        return instance;
+        return localInstance;
     }
 }

@@ -33,7 +33,7 @@ public class EmployeeController {
     private EmployeeMapper employeeMapper;
     private EmployeeService employeeService;
     private ObjectMapper objectMapper;
-    private static EmployeeController instance;
+    private static volatile EmployeeController instance;
 
     private EmployeeController() {
         employeeMapper = Mappers.getMapper(EmployeeMapper.class);
@@ -66,10 +66,17 @@ public class EmployeeController {
      * @return instance of EmployeeController
      */
     public static EmployeeController getInstance() {
-        if (instance == null) {
-            instance = new EmployeeController();
+        EmployeeController localInstance = instance;
+        if (localInstance == null) {
+            synchronized (EmployeeController.class) {
+                localInstance = instance;
+                if (localInstance == null) {
+                    instance = new EmployeeController();
+                    localInstance = instance;
+                }
+            }
         }
-        return instance;
+        return localInstance;
     }
 
     /**

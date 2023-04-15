@@ -19,7 +19,7 @@ public class AuthenticationService {
     @Getter
     private ThreadLocal<Principal> principal;
 
-    private static AuthenticationService instance;
+    private static volatile AuthenticationService instance;
 
     private AuthenticationService() {
         passwordEncoder = PasswordEncoder.getInstance();
@@ -32,10 +32,17 @@ public class AuthenticationService {
      * @return instance of AuthenticationService
      */
     public static AuthenticationService getInstance() {
-        if (instance == null) {
-            instance = new AuthenticationService();
+        AuthenticationService localInstance = instance;
+        if (localInstance == null) {
+            synchronized (AuthenticationService.class) {
+                localInstance = instance;
+                if (localInstance == null) {
+                    instance = new AuthenticationService();
+                    localInstance = instance;
+                }
+            }
         }
-        return instance;
+        return localInstance;
     }
 
     /**

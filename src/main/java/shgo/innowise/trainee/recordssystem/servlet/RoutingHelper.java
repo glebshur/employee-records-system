@@ -14,7 +14,7 @@ public class RoutingHelper {
     private Map<String, RequestHandler> putRequestHandlerMap;
     private Map<String, RequestHandler> deleteRequestHandlerMap;
 
-    private static RoutingHelper instance;
+    private static volatile RoutingHelper instance;
 
     private RoutingHelper() {
         getRequestHandlerMap = new HashMap<>();
@@ -29,11 +29,17 @@ public class RoutingHelper {
      * @return instance of RoutingHelper
      */
     public static RoutingHelper getInstance() {
-        if (instance == null) {
-            instance = new RoutingHelper();
+        RoutingHelper localInstance = instance;
+        if (localInstance == null) {
+            synchronized (RoutingHelper.class) {
+                localInstance = instance;
+                if (localInstance == null) {
+                    instance = new RoutingHelper();
+                    localInstance = instance;
+                }
+            }
         }
-
-        return instance;
+        return localInstance;
     }
 
     /**

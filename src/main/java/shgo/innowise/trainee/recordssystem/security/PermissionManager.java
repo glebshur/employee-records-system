@@ -13,7 +13,7 @@ public class PermissionManager {
     // map of roles and paths available to them
     private Map<Role, List<String>> rolesPathsMap;
 
-    private static PermissionManager instance;
+    private static volatile PermissionManager instance;
 
     private PermissionManager() {
         rolesPathsMap = new HashMap<>();
@@ -29,10 +29,17 @@ public class PermissionManager {
      * @return instance of PermissionManager
      */
     public static PermissionManager getInstance() {
-        if (instance == null) {
-            instance = new PermissionManager();
+        PermissionManager localInstance = instance;
+        if (localInstance == null) {
+            synchronized (PermissionManager.class) {
+                localInstance = instance;
+                if (localInstance == null) {
+                    instance = new PermissionManager();
+                    localInstance = instance;
+                }
+            }
         }
-        return instance;
+        return localInstance;
     }
 
     /**

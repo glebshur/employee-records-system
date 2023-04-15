@@ -39,7 +39,7 @@ public class EmployeeDAO {
     private static final String CREATION_DATE = "creation_date";
     private static final String ROLE_ID = "role_id";
 
-    private static EmployeeDAO instance;
+    private static volatile EmployeeDAO instance;
 
     private EmployeeDAO() {
     }
@@ -50,10 +50,17 @@ public class EmployeeDAO {
      * @return instance of EmployeeDAO
      */
     public static EmployeeDAO getInstance() {
-        if (instance == null) {
-            instance = new EmployeeDAO();
+        EmployeeDAO localInstance = instance;
+        if (localInstance == null) {
+            synchronized (EmployeeDAO.class) {
+                localInstance = instance;
+                if (localInstance == null) {
+                    instance = new EmployeeDAO();
+                    localInstance = instance;
+                }
+            }
         }
-        return instance;
+        return localInstance;
     }
 
     /**

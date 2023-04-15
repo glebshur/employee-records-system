@@ -19,7 +19,7 @@ import shgo.innowise.trainee.recordssystem.security.PasswordEncoder;
 public class EmployeeService {
     private EmployeeDAO employeeDAO;
     private PasswordEncoder passwordEncoder;
-    private static EmployeeService instance;
+    private static volatile EmployeeService instance;
 
     private EmployeeService() {
         employeeDAO = EmployeeDAO.getInstance();
@@ -32,11 +32,17 @@ public class EmployeeService {
      * @return instance of EmployeeService
      */
     public static EmployeeService getInstance() {
-        if (instance == null) {
-            instance = new EmployeeService();
+        EmployeeService localInstance = instance;
+        if (localInstance == null) {
+            synchronized (EmployeeService.class) {
+                localInstance = instance;
+                if (localInstance == null) {
+                    instance = new EmployeeService();
+                    localInstance = instance;
+                }
+            }
         }
-
-        return instance;
+        return localInstance;
     }
 
     /**

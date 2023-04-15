@@ -14,7 +14,7 @@ import shgo.innowise.trainee.recordssystem.response.ResponseEntity;
 @Slf4j
 public class ExceptionHandler {
 
-    private static ExceptionHandler instance;
+    private static volatile ExceptionHandler instance;
 
     private ExceptionHandler() {
     }
@@ -25,10 +25,17 @@ public class ExceptionHandler {
      * @return instance of ExceptionHandler
      */
     public static ExceptionHandler getInstance() {
-        if (instance == null) {
-            instance = new ExceptionHandler();
+        ExceptionHandler localInstance = instance;
+        if (localInstance == null) {
+            synchronized (ExceptionHandler.class) {
+                localInstance = instance;
+                if (localInstance == null) {
+                    instance = new ExceptionHandler();
+                    localInstance = instance;
+                }
+            }
         }
-        return instance;
+        return localInstance;
     }
 
     /**
