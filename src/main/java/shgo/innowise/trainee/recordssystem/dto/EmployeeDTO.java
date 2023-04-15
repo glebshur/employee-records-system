@@ -2,13 +2,16 @@ package shgo.innowise.trainee.recordssystem.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.Set;
-import lombok.Data;
+
+import lombok.*;
 import shgo.innowise.trainee.recordssystem.entity.Role;
 
 /**
  * Employee DTO.
  */
-@Data
+@NoArgsConstructor
+@Getter
+@Setter
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class EmployeeDTO {
     private long id;

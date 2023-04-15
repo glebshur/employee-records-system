@@ -2,12 +2,15 @@ package shgo.innowise.trainee.recordssystem.entity;
 
 import java.time.LocalDateTime;
 import java.util.Set;
-import lombok.Data;
+
+import lombok.*;
 
 /**
  * Represents employee entity in database.
  */
-@Data
+@NoArgsConstructor
+@Getter
+@Setter
 public class Employee {
     private long id;
     private String firstName;

@@ -2,12 +2,15 @@ package shgo.innowise.trainee.recordssystem.exception;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Default exception with status.
  */
 @EqualsAndHashCode(callSuper = true)
-@Data
+@Getter
+@Setter
 public class DefaultException extends RuntimeException {
     private int status;
 
