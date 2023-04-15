@@ -6,19 +6,17 @@ import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import shgo.innowise.trainee.recordssystem.exception.DefaultException;
 import shgo.innowise.trainee.recordssystem.response.MessageResponse;
-import shgo.innowise.trainee.recordssystem.util.ControllerUtil;
+import shgo.innowise.trainee.recordssystem.response.ResponseEntity;
 
 /**
  * Handles exceptions.
  */
 @Slf4j
 public class ExceptionHandler {
-    private ObjectMapper mapper;
 
     private static ExceptionHandler instance;
 
     private ExceptionHandler() {
-        mapper = new ObjectMapper();
     }
 
     /**
@@ -34,13 +32,13 @@ public class ExceptionHandler {
     }
 
     /**
-     * Puts exception's information to http response in json format.
+     * Puts exception's information to response entity.
      *
      * @param ex       exception
-     * @param response http response
+     * @return error message request as response entity
      */
-    public void handleException(Exception ex, HttpServletResponse response) {
-        Object objectToSend;
+    public ResponseEntity<MessageResponse> handleException(Exception ex) {
+        MessageResponse objectToSend;
         int status;
 
         log.error(ex.getMessage());
@@ -63,6 +61,6 @@ public class ExceptionHandler {
             objectToSend = new MessageResponse("Internal error");
         }
 
-        ControllerUtil.fillJsonResponse(response, status, mapper, objectToSend);
+        return new ResponseEntity<>(objectToSend, status);
     }
 }

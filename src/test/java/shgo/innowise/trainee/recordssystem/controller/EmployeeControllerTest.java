@@ -8,15 +8,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import shgo.innowise.trainee.recordssystem.controller.EmployeeController;
+import shgo.innowise.trainee.recordssystem.dto.EmployeeDTO;
 import shgo.innowise.trainee.recordssystem.entity.Employee;
+import shgo.innowise.trainee.recordssystem.response.ResponseEntity;
 import shgo.innowise.trainee.recordssystem.service.EmployeeService;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -49,15 +48,13 @@ public class EmployeeControllerTest {
 
         when(request.getPathInfo()).thenReturn("/employee/get/abc");
 
-        Assertions.assertThrows(NumberFormatException.class, () -> controller.getEmployee(request, response));
+        Assertions.assertThrows(NumberFormatException.class, () -> controller.getEmployee(request));
     }
 
     @Test
-    public void getEmployeeShouldReturnEmployeeInJson() throws IOException {
+    public void getEmployeeShouldReturnEmployeeDto() throws IOException {
         HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
-        HttpServletResponse response = Mockito.mock(HttpServletResponse.class);
 
-        StringWriter writer = new StringWriter();
         Employee employee = new Employee();
         employee.setId(11);
         employee.setFirstName("test");
@@ -65,35 +62,33 @@ public class EmployeeControllerTest {
         employee.setPassword("test1234");
 
         when(request.getPathInfo()).thenReturn("/employee/get/11");
-        when(response.getWriter()).thenReturn(new PrintWriter(writer));
         when(employeeService.getEmployee(11)).thenReturn(employee);
 
-        controller.getEmployee(request, response);
+        ResponseEntity<EmployeeDTO> responseEntity = controller.getEmployee(request);
 
-        String expectedJson = "{\"id\":11,\"firstName\":\"test\",\"lastName\":\"test\"}";
-
-        Assertions.assertTrue(writer.toString().contains(expectedJson));
+        Assertions.assertEquals("test", responseEntity.getBody().getFirstName());
+        Assertions.assertEquals("test", responseEntity.getBody().getLastName());
+        Assertions.assertEquals(11, responseEntity.getBody().getId());
+        Assertions.assertNull(responseEntity.getBody().getPassword());
     }
 
 
     @Test
     public void deleteEmployeeShouldThrowException() {
         HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
-        HttpServletResponse response = Mockito.mock(HttpServletResponse.class);
 
         when(request.getPathInfo()).thenReturn("/employee/delete/abc");
 
-        Assertions.assertThrows(NumberFormatException.class, () -> controller.deleteEmployee(request, response));
+        Assertions.assertThrows(NumberFormatException.class, () -> controller.deleteEmployee(request));
     }
 
     @Test
     public void updateEmployeeShouldThrowException() {
         HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
-        HttpServletResponse response = Mockito.mock(HttpServletResponse.class);
 
         when(request.getPathInfo()).thenReturn("/employee/update/abc");
 
-        Assertions.assertThrows(NumberFormatException.class, () -> controller.updateEmployee(request, response));
+        Assertions.assertThrows(NumberFormatException.class, () -> controller.updateEmployee(request));
     }
 
 

@@ -1,5 +1,7 @@
 package shgo.innowise.trainee.recordssystem.servlet;
 
+import shgo.innowise.trainee.recordssystem.response.ResponseEntity;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -12,7 +14,6 @@ public interface RequestHandler {
      * Handles http request.
      *
      * @param request  http servlet request
-     * @param response http servlet response
      */
-    void handle(HttpServletRequest request, HttpServletResponse response) throws IOException;
+    ResponseEntity<?> handle(HttpServletRequest request) throws IOException;
 }
